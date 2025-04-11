@@ -21,4 +21,17 @@ backend/build/
 .DS_Store
 *.log
 
+# Local .terraform directories
+**/.terraform/*
+
+# .tfstate files
+*.tfstate
+*.tfstate.*
+
+# Terraform plan output
+*.tfplan
+
+# Provider lock file
+.terraform.lock.hcl
+
 README.md
