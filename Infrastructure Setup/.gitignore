@@ -1,0 +1,23 @@
+# Local .terraform directories
+**/.terraform/*
+
+# .tfstate files
+*.tfstate
+*.tfstate.*
+*.tfstate.backup
+*.tfstate.lock.info
+
+# Terraform variable files that may contain sensitive data
+!example.tfvars
+
+# Provider lock file
+.terraform.lock.hcl
+
+
+# Kubeconfig files
+kubeconfig*
+.kube/
+
+
+
+
