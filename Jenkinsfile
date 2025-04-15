@@ -19,7 +19,7 @@ pipeline {
     environment {
         AWS_REGION = 'ap-south-1'
         TERRAFORM_DIR = './Infrastructure Setup'
-        BACKEND_BUCKET = 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX'
+        BACKEND_BUCKET = 'mern-application-terraform-bucket'
         DYNAMODB_TABLE = 'terraform-state-lock-mern-application'
     }
 
