@@ -1,0 +1,136 @@
+pipeline {
+    agent any 
+    tools {
+        jdk 'jdk'
+        nodejs 'nodejs'
+    }
+    environment {
+        SCANNER_HOME = tool 'sonar-scanner'
+        AWS_ACCOUNT_ID = credentials('AWS_ACCOUNT_ID')
+        AWS_ECR_REPO_NAME = credentials('ECR_REPO2')
+        AWS_DEFAULT_REGION = 'us-east-1'
+        REPOSITORY_URI = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/"
+        GIT_REPO_NAME = "your-repo-name"         // Replace with your repo name
+        GIT_USER_NAME = "himanshubhatt"          // Replace with your GitHub username
+    }
+    
+    stages {
+        stage('Cleaning Workspace') {
+            steps {
+                cleanWs()
+            }
+        }
+        
+        stage('Checkout from Git') {
+            steps {
+                git credentialsId: 'github-cred', 
+                    url: 'https://github.com/himanshubhatt/your-repo-name.git'
+            }
+        }
+        
+        stage('Sonarqube Analysis') {
+            steps {
+                dir('backend') {  // Adjusted path to backend directory
+                    withSonarQubeEnv('sonar-server') {
+                        sh '''
+                            $SCANNER_HOME/bin/sonar-scanner \
+                            -Dsonar.projectName=mern-backend \
+                            -Dsonar.projectKey=mern-backend
+                        '''
+                    }
+                }
+            }
+        }
+        
+        stage('Quality Check') {
+            steps {
+                script {
+                    waitForQualityGate abortPipeline: false, credentialsId: 'sonar-token' 
+                }
+            }
+        }
+        
+        stage('OWASP Dependency-Check Scan') {
+            steps {
+                dir('backend') {  // Adjusted path
+                    dependencyCheck additionalArguments: '--scan ./ --disableYarnAudit --disableNodeAudit', 
+                                  odcInstallation: 'DP-Check'
+                    dependencyCheckPublisher pattern: '**/dependency-check-report.xml'
+                }
+            }
+        }
+        
+        stage('Trivy File Scan') {
+            steps {
+                dir('backend') {  // Adjusted path
+                    sh 'trivy fs . > trivyfs.txt'
+                }
+            }
+        }
+        
+        stage("Docker Image Build") {
+            steps {
+                script {
+                    dir('backend') {  // Adjusted path
+                        sh '''
+                            docker system prune -f
+                            docker container prune -f
+                            docker build -t ${AWS_ECR_REPO_NAME} .
+                        '''
+                    }
+                }
+            }
+        }
+        
+        stage("ECR Image Pushing") {
+            steps {
+                script {
+                    sh '''
+                        aws ecr get-login-password --region ${AWS_DEFAULT_REGION} | docker login --username AWS --password-stdin ${REPOSITORY_URI}
+                        docker tag ${AWS_ECR_REPO_NAME} ${REPOSITORY_URI}${AWS_ECR_REPO_NAME}:${BUILD_NUMBER}
+                        docker push ${REPOSITORY_URI}${AWS_ECR_REPO_NAME}:${BUILD_NUMBER}
+                    '''
+                }
+            }
+        }
+        
+        stage("TRIVY Image Scan") {
+            steps {
+                sh 'trivy image ${REPOSITORY_URI}${AWS_ECR_REPO_NAME}:${BUILD_NUMBER} > trivyimage.txt' 
+            }
+        }
+        
+        stage('Update Kubernetes Manifests') {
+            steps {
+                dir('k8s/backend') {  // Adjusted to your k8s folder structure
+                    withCredentials([string(credentialsId: 'github-token', variable: 'GITHUB_TOKEN')]) {
+                        sh '''
+                            git config user.email "your-email@example.com"
+                            git config user.name "${GIT_USER_NAME}"
+                            
+                            # Update the deployment image
+                            sed -i "s|${ECR_REPO2}:.*|${ECR_REPO2}:${BUILD_NUMBER}|" deployment.yaml
+                            
+                            # Commit and push changes
+                            git add deployment.yaml
+                            git commit -m "Update backend deployment to version ${BUILD_NUMBER}"
+                            git push https://${GITHUB_TOKEN}@github.com/${GIT_USER_NAME}/${GIT_REPO_NAME} HEAD:main
+                        '''
+                    }
+                }
+            }
+        }
+    }
+    
+    post {
+        always {
+            cleanWs()
+        }
+        success {
+            echo 'Pipeline succeeded!'
+        }
+        failure {
+            echo 'Pipeline failed!'
+        }
+    }
+}

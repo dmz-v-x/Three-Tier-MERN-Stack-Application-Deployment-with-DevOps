@@ -1,0 +1,50 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: mern-ingress
+  annotations:
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}]'
+    # alb.ingress.kubernetes.io/subnets: "subnet-xxx,subnet-yyy,subnet-zzz"  # Optional: Your subnet IDs
+spec:
+  ingressClassName: alb
+  rules:
+    - host: himanshubhatt.com # Replace with your domain
+      http:
+        paths:
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: backend-service # Matches your backend service name
+                port:
+                  number: 5000 # Matches your backend service port
+          - path: /api/health
+            pathType: Exact
+            backend:
+              service:
+                name: backend-service
+                port:
+                  number: 5000
+          - path: /api/ready
+            pathType: Exact
+            backend:
+              service:
+                name: backend-service
+                port:
+                  number: 5000
+          - path: /api/startup
+            pathType: Exact
+            backend:
+              service:
+                name: backend-service
+                port:
+                  number: 5000
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: frontend-service # Matches your frontend service name
+                port:
+                  number: 80 # Matches your frontend service port
