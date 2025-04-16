@@ -6,7 +6,7 @@ metadata:
     app: frontend
     tier: frontend
 spec:
-  replicas: 2
+  replicas: 1
   strategy:
     type: RollingUpdate
     rollingUpdate:
@@ -24,10 +24,10 @@ spec:
         - name: ecr-registry-secret
       containers:
         - name: frontend
-          image: ${ECR_REPO1}:latest # This will be replaced by actual ECR URL
+          image: 590183681939.dkr.ecr.ap-south-1.amazonaws.com/frontend
           imagePullPolicy: Always
           ports:
-            - containerPort: 3000
+            - containerPort: 80
               name: http
           env:
             # ConfigMap Values
@@ -36,21 +36,11 @@ spec:
                 configMapKeyRef:
                   name: frontend-config
                   key: NODE_ENV
-            - name: REACT_APP_API_URL
+            - name: VITE_API_URL
               valueFrom:
                 configMapKeyRef:
                   name: frontend-config
-                  key: REACT_APP_API_URL
-            - name: REACT_APP_TITLE
-              valueFrom:
-                configMapKeyRef:
-                  name: frontend-config
-                  key: REACT_APP_TITLE
-            - name: REACT_APP_DESCRIPTION
-              valueFrom:
-                configMapKeyRef:
-                  name: frontend-config
-                  key: REACT_APP_DESCRIPTION
+                  key: VITE_API_URL
           resources:
             requests:
               cpu: "200m"

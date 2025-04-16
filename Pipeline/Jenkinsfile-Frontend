@@ -1,17 +1,16 @@
 pipeline {
     agent any 
     tools {
-        jdk 'jdk'
         nodejs 'nodejs'
     }
     environment {
         SCANNER_HOME = tool 'sonar-scanner'
-        AWS_ACCOUNT_ID = credentials('AWS_ACCOUNT_ID')
+        AWS_ACCOUNT_ID = credentials('ACCOUNT_ID')
         AWS_ECR_REPO_NAME = credentials('ECR_REPO1')
-        AWS_DEFAULT_REGION = 'us-east-1'
-        REPOSITORY_URI = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/"
-        GIT_REPO_NAME = "your-repo-name"         // Replace with your repo name
-        GIT_USER_NAME = "himanshubhatt"          // Replace with your GitHub username
+        AWS_DEFAULT_REGION = 'ap-south-1'
+        REPOSITORY_URI = "${ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/"
+        GIT_REPO_NAME = "https://github.com/dmz-v-x/Three-Tier-MERN-Stack-Application-Deployment-with-DevOps"         // Replace with your repo name
+        GIT_USER_NAME = "dmz-v-x"
     }
     
     stages {
@@ -23,19 +22,18 @@ pipeline {
         
         stage('Checkout from Git') {
             steps {
-                git credentialsId: 'github-cred', 
-                    url: 'https://github.com/himanshubhatt/your-repo-name.git'
+                git url: 'https://github.com/dmz-v-x/Three-Tier-MERN-Stack-Application-Deployment-with-DevOps'
             }
         }
-        
+
         stage('Sonarqube Analysis') {
             steps {
-                dir('frontend') {  // Adjusted path to frontend directory
+                dir('NoteFlow/frontend') {  // Adjusted path to frontend directory
                     withSonarQubeEnv('sonar-server') {
                         sh '''
                             $SCANNER_HOME/bin/sonar-scanner \
-                            -Dsonar.projectName=mern-frontend \
-                            -Dsonar.projectKey=mern-frontend
+                            -Dsonar.projectName=frontend \
+                            -Dsonar.projectKey=frontend
                         '''
                     }
                 }
@@ -62,7 +60,7 @@ pipeline {
         
         stage('Trivy File Scan') {
             steps {
-                dir('frontend') {  // Adjusted path
+                dir('NoteFlow/frontend') {  // Adjusted path
                     sh 'trivy fs . > trivyfs.txt'
                 }
             }
@@ -71,7 +69,7 @@ pipeline {
         stage("Docker Image Build") {
             steps {
                 script {
-                    dir('frontend') {  // Adjusted path
+                    dir('NoteFlow/frontend') {  // Adjusted path
                         sh '''
                             docker system prune -f
                             docker container prune -f
@@ -103,10 +101,10 @@ pipeline {
         stage('Update Kubernetes Manifests') {
             steps {
                 dir('k8s/frontend') {  // Adjusted to your k8s folder structure
-                    withCredentials([string(credentialsId: 'github-token', variable: 'GITHUB_TOKEN')]) {
+                    withCredentials([string(credentialsId: 'GITHUB-APP', variable: 'GITHUB_TOKEN')]) {
                         sh '''
-                            git config user.email "your-email@example.com"
-                            git config user.name "${GIT_USER_NAME}"
+                            git config user.email "hbhatt034@gmail.com"
+                            git config user.name "Himanshu Bhatt"
                             
                             # Update the deployment image
                             sed -i "s|${ECR_REPO1}:.*|${ECR_REPO1}:${BUILD_NUMBER}|" deployment.yaml

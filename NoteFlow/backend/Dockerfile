@@ -1,20 +1,20 @@
-# Use the official Node.js image from Docker Hub as a base image
-FROM node:18
+# Use a secure, lightweight Node image
+FROM node:23-alpine
 
-# Set the working directory inside the container
+# Create app directory
 WORKDIR /usr/src/app
 
-# Copy the package.json and package-lock.json (if available)
+# Copy package files and install only production dependencies
 COPY package*.json ./
 
 # Install the app dependencies inside the container
 RUN npm install
 
-# Copy the rest of the application code
+# Copy app source code
 COPY . .
 
-# Expose the port that your backend API will run on (for example, 5000)
+# Expose the backend port
 EXPOSE 5000
 
-# Start the backend server (no hardcoding of Mongo URI here)
+# Start the server
 CMD ["npm", "start"]
