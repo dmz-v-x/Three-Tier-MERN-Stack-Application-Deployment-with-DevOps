@@ -1,10 +1,11 @@
 pipeline {
     agent any 
+
     tools {
         nodejs 'nodejs'
     }
+
     environment {
-        SCANNER_HOME = tool 'sonar-scanner'
         AWS_ACCOUNT_ID = credentials('ACCOUNT_ID')
         AWS_ECR_REPO_NAME = credentials('ECR_REPO1')
         AWS_DEFAULT_REGION = 'ap-south-1'
@@ -12,14 +13,15 @@ pipeline {
         GIT_REPO_NAME = "Three-Tier-MERN-Stack-Application-Deployment-with-DevOps"
         GIT_USER_NAME = "dmz-v-x"
     }
-    
+
     stages {
+
         stage('Cleaning Workspace') {
             steps {
                 cleanWs()
             }
         }
-        
+
         stage('Checkout from Git') {
             steps {
                 git branch: 'main', url: "https://github.com/${env.GIT_USER_NAME}/${env.GIT_REPO_NAME}"
@@ -28,83 +30,86 @@ pipeline {
 
         stage('Sonarqube Analysis') {
             steps {
-                dir('NoteFlow/frontend') {  // Adjusted path to frontend directory
-                    withSonarQubeEnv('sonar-server') {
-                        sh '''
-                            $SCANNER_HOME/bin/sonar-scanner \
-                            -Dsonar.projectName=frontend \
-                            -Dsonar.projectKey=frontend
-                        '''
+                dir('NoteFlow/frontend') {
+                    script {
+                        // Set Sonar Scanner tool path
+                        def scannerHome = tool name: 'sonar-scanner', type: 'hudson.plugins.sonar.SonarRunnerInstallation'
+
+                        withSonarQubeEnv('sonar-server') {
+                            withEnv(["PATH+SONAR=${scannerHome}/bin"]) {
+                                sh '''
+                                    sonar-scanner \
+                                    -Dsonar.projectName=frontend \
+                                    -Dsonar.projectKey=frontend
+                                '''
+                            }
+                        }
                     }
                 }
             }
         }
-        
+
         stage('Quality Check') {
             steps {
                 script {
-                    waitForQualityGate abortPipeline: false, credentialsId: 'sonar-token' 
+                    waitForQualityGate abortPipeline: false, credentialsId: 'sonar-token'
                 }
             }
         }
-        
+
         stage('OWASP Dependency-Check Scan') {
             steps {
-                dir('NoteFlow/frontend') {  // Adjusted path
+                dir('NoteFlow/frontend') {
                     dependencyCheck additionalArguments: '--scan ./ --disableYarnAudit --disableNodeAudit', 
-                                  odcInstallation: 'DP-Check'
+                                    odcInstallation: 'DP-Check'
                     dependencyCheckPublisher pattern: '**/dependency-check-report.xml'
                 }
             }
         }
-        
+
         stage('Trivy File Scan') {
             steps {
-                dir('NoteFlow/frontend') {  // Adjusted path
+                dir('NoteFlow/frontend') {
                     sh 'trivy fs . > trivyfs.txt'
                 }
             }
         }
-        
+
         stage("Docker Image Build") {
             steps {
-                script {
-                    dir('NoteFlow/frontend') {  // Adjusted path
-                        sh '''
-                            docker system prune -f
-                            docker container prune -f
-                            docker build -t ${REPOSITORY_URI}/${AWS_ECR_REPO_NAME}:${BUILD_NUMBER} .
-                        '''
-                    }
-                }
-            }
-        }
-        
-        stage("ECR Image Pushing") {
-            steps {
-                script {
+                dir('NoteFlow/frontend') {
                     sh '''
-                        aws ecr get-login-password --region ${AWS_DEFAULT_REGION} | docker login --username AWS --password-stdin ${REPOSITORY_URI}
-                        docker push ${REPOSITORY_URI}/${AWS_ECR_REPO_NAME}:${BUILD_NUMBER}
+                        docker system prune -f
+                        docker container prune -f
+                        docker build -t ${REPOSITORY_URI}/${AWS_ECR_REPO_NAME}:${BUILD_NUMBER} .
                     '''
                 }
             }
         }
-        
-        stage("TRIVY Image Scan") {
+
+        stage("ECR Image Pushing") {
             steps {
-                sh 'trivy image ${REPOSITORY_URI}${AWS_ECR_REPO_NAME}:${BUILD_NUMBER} > trivyimage.txt' 
+                sh '''
+                    aws ecr get-login-password --region ${AWS_DEFAULT_REGION} | docker login --username AWS --password-stdin ${REPOSITORY_URI}
+                    docker push ${REPOSITORY_URI}/${AWS_ECR_REPO_NAME}:${BUILD_NUMBER}
+                '''
             }
         }
-        
+
+        stage("TRIVY Image Scan") {
+            steps {
+                sh 'trivy image ${REPOSITORY_URI}/${AWS_ECR_REPO_NAME}:${BUILD_NUMBER} > trivyimage.txt'
+            }
+        }
+
         stage('Update Kubernetes Manifests') {
             steps {
-                dir('k8s/frontend') {  // Adjusted to your k8s folder structure
+                dir('k8s/frontend') {
                     withCredentials([usernamePassword(credentialsId: 'GITHUB-APP', usernameVariable: 'GIT_USER_NAME', passwordVariable: 'GITHUB_TOKEN')]) {
                         sh '''
                             git config user.email "hbhatt034@gmail.com"
                             git config user.name "Himanshu Bhatt"
-                            
+
                             # Update the deployment image
                             sed -i "s|image:.*|image: ${REPOSITORY_URI}/${AWS_ECR_REPO_NAME}:${BUILD_NUMBER}|" deployment.yaml
 
@@ -118,16 +123,16 @@ pipeline {
             }
         }
     }
-    
+
     post {
         always {
             cleanWs()
         }
         success {
-            echo 'Pipeline succeeded!'
+            echo '✅ Pipeline succeeded!'
         }
         failure {
-            echo 'Pipeline failed!'
+            echo '❌ Pipeline failed!'
         }
     }
 }
