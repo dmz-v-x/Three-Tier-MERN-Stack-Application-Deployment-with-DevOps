@@ -9,7 +9,7 @@ pipeline {
         AWS_ECR_REPO_NAME = credentials('ECR_REPO1')
         AWS_DEFAULT_REGION = 'ap-south-1'
         REPOSITORY_URI = "${ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/"
-        GIT_REPO_NAME = "https://github.com/dmz-v-x/Three-Tier-MERN-Stack-Application-Deployment-with-DevOps"         // Replace with your repo name
+        GIT_REPO_NAME = "Three-Tier-MERN-Stack-Application-Deployment-with-DevOps"
         GIT_USER_NAME = "dmz-v-x"
     }
     
@@ -22,7 +22,7 @@ pipeline {
         
         stage('Checkout from Git') {
             steps {
-                git url: 'https://github.com/dmz-v-x/Three-Tier-MERN-Stack-Application-Deployment-with-DevOps'
+                git url: "https://github.com/${env.GIT_USER_NAME}/${env.GIT_REPO_NAME}"
             }
         }
 
@@ -50,7 +50,7 @@ pipeline {
         
         stage('OWASP Dependency-Check Scan') {
             steps {
-                dir('frontend') {  // Adjusted path
+                dir('NoteFlow/frontend') {  // Adjusted path
                     dependencyCheck additionalArguments: '--scan ./ --disableYarnAudit --disableNodeAudit', 
                                   odcInstallation: 'DP-Check'
                     dependencyCheckPublisher pattern: '**/dependency-check-report.xml'
@@ -73,7 +73,7 @@ pipeline {
                         sh '''
                             docker system prune -f
                             docker container prune -f
-                            docker build -t ${AWS_ECR_REPO_NAME} .
+                            docker build -t ${REPOSITORY_URI}/${AWS_ECR_REPO_NAME}:${BUILD_NUMBER} .
                         '''
                     }
                 }
@@ -85,7 +85,6 @@ pipeline {
                 script {
                     sh '''
                         aws ecr get-login-password --region ${AWS_DEFAULT_REGION} | docker login --username AWS --password-stdin ${REPOSITORY_URI}
-                        docker tag ${AWS_ECR_REPO_NAME} ${REPOSITORY_URI}${AWS_ECR_REPO_NAME}:${BUILD_NUMBER}
                         docker push ${REPOSITORY_URI}${AWS_ECR_REPO_NAME}:${BUILD_NUMBER}
                     '''
                 }
@@ -101,18 +100,18 @@ pipeline {
         stage('Update Kubernetes Manifests') {
             steps {
                 dir('k8s/frontend') {  // Adjusted to your k8s folder structure
-                    withCredentials([string(credentialsId: 'GITHUB-APP', variable: 'GITHUB_TOKEN')]) {
+                    withCredentials([usernamePassword(credentialsId: 'GITHUB-APP', usernameVariable: 'GIT_USER_NAME', passwordVariable: 'GITHUB_TOKEN')]) {
                         sh '''
                             git config user.email "hbhatt034@gmail.com"
                             git config user.name "Himanshu Bhatt"
                             
                             # Update the deployment image
-                            sed -i "s|${ECR_REPO1}:.*|${ECR_REPO1}:${BUILD_NUMBER}|" deployment.yaml
-                            
+                            sed -i "s|image:.*|image: ${REPOSITORY_URI}/${AWS_ECR_REPO_NAME}:${BUILD_NUMBER}|" deployment.yaml
+
                             # Commit and push changes
                             git add deployment.yaml
                             git commit -m "Update frontend deployment to version ${BUILD_NUMBER}"
-                            git push https://${GITHUB_TOKEN}@github.com/${GIT_USER_NAME}/${GIT_REPO_NAME} HEAD:main
+                            git push https://${GIT_USER_NAME}:${GITHUB_TOKEN}@github.com/${GIT_USER_NAME}/${GIT_REPO_NAME} HEAD:main
                         '''
                     }
                 }
