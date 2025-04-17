@@ -1,17 +1,16 @@
 pipeline {
     agent any 
     tools {
-        jdk 'jdk'
         nodejs 'nodejs'
     }
     environment {
         SCANNER_HOME = tool 'sonar-scanner'
-        AWS_ACCOUNT_ID = credentials('AWS_ACCOUNT_ID')
+        AWS_ACCOUNT_ID = credentials('ACCOUNT_ID')
         AWS_ECR_REPO_NAME = credentials('ECR_REPO2')
         AWS_DEFAULT_REGION = 'us-east-1'
-        REPOSITORY_URI = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/"
-        GIT_REPO_NAME = "your-repo-name"         // Replace with your repo name
-        GIT_USER_NAME = "himanshubhatt"          // Replace with your GitHub username
+        REPOSITORY_URI = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com"
+        GIT_REPO_NAME = "Three-Tier-MERN-Stack-Application-Deployment-with-DevOps"        
+        GIT_USER_NAME = "dmz-v-x"         
     }
     
     stages {
@@ -23,19 +22,18 @@ pipeline {
         
         stage('Checkout from Git') {
             steps {
-                git credentialsId: 'github-cred', 
-                    url: 'https://github.com/himanshubhatt/your-repo-name.git'
+                git branch: 'main', url: "https://github.com/${env.GIT_USER_NAME}/${env.GIT_REPO_NAME}"
             }
         }
         
         stage('Sonarqube Analysis') {
             steps {
-                dir('backend') {  // Adjusted path to backend directory
+                dir('NoteFlow/backend') {
                     withSonarQubeEnv('sonar-server') {
                         sh '''
                             $SCANNER_HOME/bin/sonar-scanner \
-                            -Dsonar.projectName=mern-backend \
-                            -Dsonar.projectKey=mern-backend
+                            -Dsonar.projectName=backend \
+                            -Dsonar.projectKey=backend
                         '''
                     }
                 }
@@ -52,7 +50,7 @@ pipeline {
         
         stage('OWASP Dependency-Check Scan') {
             steps {
-                dir('backend') {  // Adjusted path
+                dir('NoteFlow/backend') {
                     dependencyCheck additionalArguments: '--scan ./ --disableYarnAudit --disableNodeAudit', 
                                   odcInstallation: 'DP-Check'
                     dependencyCheckPublisher pattern: '**/dependency-check-report.xml'
@@ -62,7 +60,7 @@ pipeline {
         
         stage('Trivy File Scan') {
             steps {
-                dir('backend') {  // Adjusted path
+                dir('NoteFlow/backend') {
                     sh 'trivy fs . > trivyfs.txt'
                 }
             }
@@ -71,11 +69,23 @@ pipeline {
         stage("Docker Image Build") {
             steps {
                 script {
-                    dir('backend') {  // Adjusted path
+                    dir('NoteFlow/backend') {
                         sh '''
                             docker system prune -f
                             docker container prune -f
-                            docker build -t ${AWS_ECR_REPO_NAME} .
+                            docker build -t ${REPOSITORY_URI}/${AWS_ECR_REPO_NAME}:${BUILD_NUMBER} .
+                        '''
+                    }
+                }
+            }
+        }
+
+        stage("TRIVY Image Scan") {
+            steps {
+                script {
+                    dir('NoteFlow/backend') {
+                        sh '''
+                            trivy image ${REPOSITORY_URI}/${AWS_ECR_REPO_NAME}:${BUILD_NUMBER} > trivyimage.txt
                         '''
                     }
                 }
@@ -87,34 +97,28 @@ pipeline {
                 script {
                     sh '''
                         aws ecr get-login-password --region ${AWS_DEFAULT_REGION} | docker login --username AWS --password-stdin ${REPOSITORY_URI}
-                        docker tag ${AWS_ECR_REPO_NAME} ${REPOSITORY_URI}${AWS_ECR_REPO_NAME}:${BUILD_NUMBER}
-                        docker push ${REPOSITORY_URI}${AWS_ECR_REPO_NAME}:${BUILD_NUMBER}
+                        docker push ${REPOSITORY_URI}/${AWS_ECR_REPO_NAME}:${BUILD_NUMBER}
                     '''
                 }
             }
         }
         
-        stage("TRIVY Image Scan") {
-            steps {
-                sh 'trivy image ${REPOSITORY_URI}${AWS_ECR_REPO_NAME}:${BUILD_NUMBER} > trivyimage.txt' 
-            }
-        }
         
         stage('Update Kubernetes Manifests') {
             steps {
-                dir('k8s/backend') {  // Adjusted to your k8s folder structure
-                    withCredentials([string(credentialsId: 'github-token', variable: 'GITHUB_TOKEN')]) {
+                dir('k8s/backend') {
+                    withCredentials([usernamePassword(credentialsId: 'GITHUB-APP', usernameVariable: 'GIT_USER_NAME', passwordVariable: 'GITHUB_TOKEN')]) {
                         sh '''
-                            git config user.email "your-email@example.com"
-                            git config user.name "${GIT_USER_NAME}"
+                            git config user.email "hbhatt034@gmail.com"
+                            git config user.name "Himanshu Bhatt"
                             
                             # Update the deployment image
-                            sed -i "s|${ECR_REPO2}:.*|${ECR_REPO2}:${BUILD_NUMBER}|" deployment.yaml
-                            
+                            sed -i "s|image:.*|image: ${REPOSITORY_URI}/${AWS_ECR_REPO_NAME}:${BUILD_NUMBER}|" deployment.yaml
+
                             # Commit and push changes
                             git add deployment.yaml
                             git commit -m "Update backend deployment to version ${BUILD_NUMBER}"
-                            git push https://${GITHUB_TOKEN}@github.com/${GIT_USER_NAME}/${GIT_REPO_NAME} HEAD:main
+                            git push https://${GIT_USER_NAME}:${GITHUB_TOKEN}@github.com/${GIT_USER_NAME}/${GIT_REPO_NAME} HEAD:main
                         '''
                     }
                 }

@@ -80,7 +80,6 @@ pipeline {
             }
         }
 
-        // ✅ Move image scan BEFORE pushing to ECR
         stage("TRIVY Image Scan") {
             steps {
                 script {

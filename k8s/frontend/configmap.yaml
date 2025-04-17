@@ -10,11 +10,4 @@ data:
   NODE_ENV: "production"
 
   # API Configuration
-  REACT_APP_API_URL: "/api"
-
-  # Other frontend configurations
-  REACT_APP_TITLE: "Your App Name"
-  REACT_APP_DESCRIPTION: "Your App Description"
-
-  # Cache Control
-  REACT_APP_CACHE_MAX_AGE: "31536000" # 1 year in seconds
+  VITE_API_URL_API_URL: "/api"
