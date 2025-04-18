@@ -14,6 +14,21 @@ spec:
     - host: notesflow.himanshubhatt.co.in
       http:
         paths:
+          # Catch-all path for root to route to frontend service
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: frontend-service
+                port:
+                  number: 80
+          - path: /notesflow/
+            pathType: Prefix
+            backend:
+              service:
+                name: frontend-service
+                port:
+                  number: 80
           - path: /notesflow/api
             pathType: Prefix
             backend:
@@ -42,10 +57,3 @@ spec:
                 name: backend-service
                 port:
                   number: 5000
-          - path: /notesflow/
-            pathType: Prefix
-            backend:
-              service:
-                name: frontend-service
-                port:
-                  number: 80
