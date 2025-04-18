@@ -10,41 +10,41 @@ metadata:
 spec:
   ingressClassName: alb
   rules:
-    - host: himanshubhatt.co.in/notesflow # Replace with your domain
+    - host: himanshubhatt.co.in
       http:
         paths:
-          - path: /api
+          - path: /notesflow/api
             pathType: Prefix
             backend:
               service:
-                name: backend-service # Matches your backend service name
+                name: backend-service
                 port:
-                  number: 5000 # Matches your backend service port
-          - path: /api/health
+                  number: 5000
+          - path: /notesflow/api/health
             pathType: Exact
             backend:
               service:
                 name: backend-service
                 port:
                   number: 5000
-          - path: /api/ready
+          - path: /notesflow/api/ready
             pathType: Exact
             backend:
               service:
                 name: backend-service
                 port:
                   number: 5000
-          - path: /api/startup
+          - path: /notesflow/api/startup
             pathType: Exact
             backend:
               service:
                 name: backend-service
                 port:
                   number: 5000
-          - path: /
+          - path: /notesflow/
             pathType: Prefix
             backend:
               service:
-                name: frontend-service # Matches your frontend service name
+                name: frontend-service
                 port:
-                  number: 80 # Matches your frontend service port
+                  number: 80
