@@ -22,20 +22,6 @@ spec:
                 name: frontend-service
                 port:
                   number: 80
-          - path: /notesflow/
-            pathType: Prefix
-            backend:
-              service:
-                name: frontend-service
-                port:
-                  number: 80
-          - path: /notesflow/api
-            pathType: Prefix
-            backend:
-              service:
-                name: backend-service
-                port:
-                  number: 5000
           - path: /api/health
             pathType: Exact
             backend:
