@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -30,7 +29,7 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
-      <BrowserRouter>
+      <BrowserRouter basename="/notesflow">
         <AuthProvider>
           <NotesProvider>
             <Routes>
@@ -38,75 +37,75 @@ const App = () => (
               <Route path="/" element={<LandingPage />} />
               <Route path="/login" element={<LoginPage />} />
               <Route path="/register" element={<RegisterPage />} />
-              
+
               {/* Protected routes */}
               <Route element={<AppLayout />}>
-                <Route 
-                  path="/dashboard" 
+                <Route
+                  path="/dashboard"
                   element={
                     <ProtectedRoute>
                       <DashboardPage />
                     </ProtectedRoute>
-                  } 
+                  }
                 />
-                <Route 
-                  path="/notes" 
+                <Route
+                  path="/notes"
                   element={
                     <ProtectedRoute>
                       <AllNotesPage />
                     </ProtectedRoute>
-                  } 
+                  }
                 />
-                <Route 
-                  path="/notes/new" 
+                <Route
+                  path="/notes/new"
                   element={
                     <ProtectedRoute>
                       <NewNotePage />
                     </ProtectedRoute>
-                  } 
+                  }
                 />
-                <Route 
-                  path="/notes/edit/:id" 
+                <Route
+                  path="/notes/edit/:id"
                   element={
                     <ProtectedRoute>
                       <EditNotePage />
                     </ProtectedRoute>
-                  } 
+                  }
                 />
-                <Route 
-                  path="/notes/:id" 
+                <Route
+                  path="/notes/:id"
                   element={
                     <ProtectedRoute>
                       <NoteDetailPage />
                     </ProtectedRoute>
-                  } 
+                  }
                 />
-                <Route 
-                  path="/category/:category" 
+                <Route
+                  path="/category/:category"
                   element={
                     <ProtectedRoute>
                       <CategoryPage />
                     </ProtectedRoute>
-                  } 
+                  }
                 />
-                <Route 
-                  path="/search" 
+                <Route
+                  path="/search"
                   element={
                     <ProtectedRoute>
                       <SearchPage />
                     </ProtectedRoute>
-                  } 
+                  }
                 />
-                <Route 
-                  path="/settings" 
+                <Route
+                  path="/settings"
                   element={
                     <ProtectedRoute>
                       <SettingsPage />
                     </ProtectedRoute>
-                  } 
+                  }
                 />
               </Route>
-              
+
               {/* 404 page */}
               <Route path="*" element={<NotFound />} />
             </Routes>
