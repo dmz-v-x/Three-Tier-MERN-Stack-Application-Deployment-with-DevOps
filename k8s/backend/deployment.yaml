@@ -1,6 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
+  namespace: three-tier
   name: backend-api
   labels:
     app: backend-api
