@@ -2,15 +2,15 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: mern-ingress
+  namespace: three-tier
   annotations:
     alb.ingress.kubernetes.io/scheme: internet-facing
     alb.ingress.kubernetes.io/target-type: ip
     alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}]'
-    # alb.ingress.kubernetes.io/subnets: "subnet-xxx,subnet-yyy,subnet-zzz"  # Optional: Your subnet IDs
 spec:
   ingressClassName: alb
   rules:
-    - host: himanshubhatt.com # Replace with your domain
+    - host: himanshubhatt.co.in/notesflow # Replace with your domain
       http:
         paths:
           - path: /api
