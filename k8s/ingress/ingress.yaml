@@ -7,14 +7,14 @@ metadata:
     alb.ingress.kubernetes.io/scheme: internet-facing
     alb.ingress.kubernetes.io/target-type: ip
     alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS": 443}]'
-    alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:ap-south-1:590183681939:certificate/8059e625-0ecf-441b-bd6f-1a96969ed3ee
+    alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:ap-south-1:590183681939:certificate/192406e9-c2b8-4ef1-a90d-fe176ebf697b
 spec:
   ingressClassName: alb
   rules:
     - host: notesflow.himanshubhatt.co.in
       http:
         paths:
-          - path: /api
+          - path: /notesflow/api
             pathType: Prefix
             backend:
               service:
@@ -42,7 +42,7 @@ spec:
                 name: backend-service
                 port:
                   number: 5000
-          - path: /
+          - path: /notesflow/
             pathType: Prefix
             backend:
               service:
