@@ -46,7 +46,7 @@ spec:
                   name: backend-config
                   key: PORT
             # Secrets
-            - name: MONGODB_URI
+            - name: MONGO_URI
               valueFrom:
                 secretKeyRef:
                   name: mongodb-secret
