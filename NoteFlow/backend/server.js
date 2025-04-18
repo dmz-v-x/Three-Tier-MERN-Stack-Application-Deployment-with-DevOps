@@ -23,6 +23,19 @@ app.get("/", (req, res) => {
   res.json({ message: "API is running" });
 });
 
+// In your Express app
+app.get("/api/health", (req, res) => {
+  res.status(200).json({ status: "healthy" });
+});
+
+app.get("/api/ready", (req, res) => {
+  res.status(200).json({ status: "ready" });
+});
+
+app.get("/api/startup", (req, res) => {
+  res.status(200).json({ status: "started" });
+});
+
 // Error handling
 app.use((req, res, next) => {
   const error = new Error(`Not Found - ${req.originalUrl}`);
