@@ -1,10 +1,11 @@
-interface AppConfig {
-  API_URL: string;
-}
-
 declare global {
   interface Window {
-    APP_CONFIG: AppConfig;
+    APP_CONFIG:
+      | {
+          API_URL: string;
+          NODE_ENV: "development" | "production" | "test";
+        }
+      | undefined;
   }
 }
 

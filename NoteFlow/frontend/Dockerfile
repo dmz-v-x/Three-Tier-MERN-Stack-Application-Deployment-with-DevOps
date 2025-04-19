@@ -16,8 +16,15 @@ COPY nginx/default.conf /etc/nginx/conf.d/default.conf
 # Copy the built static files from the previous stage
 COPY --from=builder /app/dist /usr/share/nginx/html
 
-# Copy config.js to the nginx html directory
-COPY --from=builder /app/public/config.js /usr/share/nginx/html/config.js
+# Create env.sh script for runtime environment variable substitution
+RUN echo '#!/bin/sh' > /docker-entrypoint.d/40-env.sh && \
+    echo 'cat > /usr/share/nginx/html/config.js <<EOF' >> /docker-entrypoint.d/40-env.sh && \
+    echo 'window.APP_CONFIG = {' >> /docker-entrypoint.d/40-env.sh && \
+    echo '  API_URL: "${API_URL}",' >> /docker-entrypoint.d/40-env.sh && \
+    echo '  NODE_ENV: "${NODE_ENV}"' >> /docker-entrypoint.d/40-env.sh && \
+    echo '};' >> /docker-entrypoint.d/40-env.sh && \
+    echo 'EOF' >> /docker-entrypoint.d/40-env.sh && \
+    chmod +x /docker-entrypoint.d/40-env.sh
 
 # Expose port 80
 EXPOSE 80
