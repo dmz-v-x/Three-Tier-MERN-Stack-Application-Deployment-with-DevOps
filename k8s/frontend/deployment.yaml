@@ -37,11 +37,11 @@ spec:
                 configMapKeyRef:
                   name: frontend-config
                   key: NODE_ENV
-            - name: VITE_API_URL
+            - name: API_URL
               valueFrom:
                 configMapKeyRef:
                   name: frontend-config
-                  key: VITE_API_URL
+                  key: API_URL
           resources:
             requests:
               cpu: "200m"
