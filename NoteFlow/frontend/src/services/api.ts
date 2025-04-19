@@ -3,10 +3,11 @@ import { toast } from "@/hooks/use-toast";
 
 // Base API configuration
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || "http://localhost:5000/api",
+  baseURL: window.APP_CONFIG?.API_URL || "http://localhost:5000/api",
   headers: {
     "Content-Type": "application/json",
   },
+  withCredentials: true,
 });
 
 // Request interceptor for adding auth token

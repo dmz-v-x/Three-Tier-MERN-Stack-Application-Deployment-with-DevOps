@@ -10,4 +10,4 @@ data:
   NODE_ENV: "production"
 
   # API Configuration
-  VITE_API_URL: "https://notesflow.himanshubhatt.co.in/"
+  API_URL: "https://notesflow.himanshubhatt.co.in/api"

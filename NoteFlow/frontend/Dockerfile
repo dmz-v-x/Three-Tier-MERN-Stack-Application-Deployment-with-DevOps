@@ -16,6 +16,9 @@ COPY nginx/default.conf /etc/nginx/conf.d/default.conf
 # Copy the built static files from the previous stage
 COPY --from=builder /app/dist /usr/share/nginx/html
 
+# Copy config.js to the nginx html directory
+COPY --from=builder /app/public/config.js /usr/share/nginx/html/config.js
+
 # Expose port 80
 EXPOSE 80
 
